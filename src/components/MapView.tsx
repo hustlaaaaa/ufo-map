@@ -110,7 +110,7 @@ export default function MapView() {
 
   // Load marker data from JSON
   useEffect(() => {
-    fetch("/src/data/markers1.json")
+    fetch("/data/markers1.json")
       .then(r => r.json())
       .then(setMarkers);
   }, []);
