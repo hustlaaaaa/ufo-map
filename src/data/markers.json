@@ -1,0 +1,83 @@
+
+[
+  {
+    "id": 1,
+    "lat": 40.7128,
+    "lon": -74.006,
+    "title": "New York",
+    "description": "The city that never sleeps.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kmnqa2/ufo_sighting_in_downtown_la/"
+  },
+  {
+    "id": 2,
+    "lat": 34.0522,
+    "lon": -118.2437,
+    "title": "Los Angeles",
+    "description": "City of Angels.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kmys58/flying_object_with_6_bright_white_flashing_lights/"
+  },
+  {
+    "id": 3,
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "title": "London",
+    "description": "Capital of England.",
+    "link":"https://www.reddit.com/r/UFOs/comments/1kmrhai/just_now_time10pm_location_milton_keynes_uk/"
+  },
+  {
+    "id": 4,
+    "lat": 35.6895,
+    "lon": 139.6917,
+    "title": "Tokyo",
+    "description": "Heart of Japan.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kls7vg/june_27_2024_927am_delano_ca/"
+  },
+  {
+    "id": 5,
+    "lat": 48.8566,
+    "lon": 2.3522,
+    "title": "Paris",
+    "description": "The city of lights.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kkr3ob/summary_of_experience_from_years_ago/"
+  },
+  {
+    "id": 6,
+    "lat": -33.8688,
+    "lon": 151.2093,
+    "title": "Sydney",
+    "description": "Down Under.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kkp3ix/strange_object_sighted_in_pakistan_ufouap_10_may/"
+  },
+  {
+    "id": 7,
+    "lat": 55.7558,
+    "lon": 37.6173,
+    "title": "Moscow",
+    "description": "The capital of Russia.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kknjnt/multiple_orb_encounter_above_sea/"
+  },
+  {
+    "id": 8,
+    "lat": 52.52,
+    "lon": 13.405,
+    "title": "Berlin",
+    "description": "Germany's capital.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kkhll1/various_orbs_spotted_in_bushwick_brooklyn/"
+  },
+  {
+    "id": 9,
+    "lat": 19.076,
+    "lon": 72.8777,
+    "title": "Mumbai",
+    "description": "Bollywood's home.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kk6qmy/ufo_in_kuala_lampur/"
+  },
+  {
+    "id": 10,
+    "lat": 37.7749,
+    "lon": -122.4194,
+    "title": "San Francisco",
+    "description": "The Golden Gate.",
+    "link": "https://www.reddit.com/r/UFOs/comments/1kjyodj/sighing_above_utrecht_netherlands/"
+  }
+]
