@@ -28,16 +28,51 @@ type ClusterData = {
   lon: number;
 };
 
-const loadScript = (src: string) =>
-  new Promise<void>((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+const scriptLoadingPromises: Record<string, Promise<void>> = {};
+
+const loadScript = (src: string, isLoaded?: () => boolean) => {
+  if (scriptLoadingPromises[src]) {
+    return scriptLoadingPromises[src];
+  }
+
+  const promise = new Promise<void>((resolve, reject) => {
+    // Check if already loaded via callback first (most reliable for HMR)
+    if (isLoaded && isLoaded()) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector(`script[src="${src}"]`);
+    if (existingScript) {
+      if (existingScript.getAttribute("data-loaded") === "true") {
+        resolve();
+        return;
+      }
+      // If script exists but not loaded, add listener
+      const onMapLoad = () => {
+        resolve();
+        existingScript.removeEventListener("load", onMapLoad);
+      };
+      existingScript.addEventListener("load", onMapLoad);
+      existingScript.addEventListener("error", reject);
+      return;
+    }
+
     const script = document.createElement("script");
     script.src = src;
     script.async = true;
-    script.onload = () => resolve();
+    script.setAttribute("data-loaded", "false");
+    script.onload = () => {
+      script.setAttribute("data-loaded", "true");
+      resolve();
+    };
     script.onerror = reject;
     document.body.appendChild(script);
   });
+
+  scriptLoadingPromises[src] = promise;
+  return promise;
+};
 
 const loadCss = (href: string) => {
   if (document.querySelector(`link[href="${href}"]`)) return;
@@ -75,7 +110,7 @@ export default function MapView() {
 
   // Load marker data from JSON
   useEffect(() => {
-    fetch("/data/markers1.json")
+    fetch("/src/data/markers1.json")
       .then(r => r.json())
       .then(setMarkers);
   }, []);
@@ -115,7 +150,7 @@ export default function MapView() {
 
     const handleScroll = () => {
       if (loadingMore || !hasMore) return;
-      
+
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
       // Load more when user is within 100px of bottom
       if (scrollHeight - scrollTop - clientHeight < 100) {
@@ -135,7 +170,7 @@ export default function MapView() {
     if (existingScript) {
       existingScript.remove();
     }
-    
+
     if (visibleMarkers.length > 0) {
       const script = document.createElement('script');
       script.id = 'reddit-widget-script';
@@ -144,7 +179,7 @@ export default function MapView() {
       script.charset = 'UTF-8';
       document.body.appendChild(script);
     }
-    
+
     return () => {
       // Cleanup on unmount
       const scriptToRemove = document.getElementById('reddit-widget-script');
@@ -160,14 +195,14 @@ export default function MapView() {
       // Load CSS first
       loadCss("https://unpkg.com/leaflet/dist/leaflet.css");
       loadCss("https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css");
-      
+
       try {
         // Make sure Leaflet loads first
-        await loadScript("https://unpkg.com/leaflet/dist/leaflet.js");
+        await loadScript("https://unpkg.com/leaflet/dist/leaflet.js", () => !!window.L);
         console.log("Leaflet loaded successfully");
-        
+
         // Then load MarkerCluster after Leaflet is confirmed to be loaded
-        await loadScript("https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js");
+        await loadScript("https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js", () => !!window.L?.markerClusterGroup);
         console.log("MarkerCluster loaded successfully");
 
         // Give a small delay to ensure scripts are fully initialized
@@ -178,19 +213,21 @@ export default function MapView() {
           if (typeof window.L.markerClusterGroup === "function") {
             console.log("Leaflet and MarkerCluster loaded successfully.");
           } else {
-            console.warn("MarkerCluster plugin missing! typeof window.L.markerClusterGroup:", 
+            console.warn("MarkerCluster plugin missing! typeof window.L.markerClusterGroup:",
               typeof window.L.markerClusterGroup);
             // Try to reload MarkerCluster if it's missing
-            await loadScript("https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js");
-            console.log("Attempted to reload MarkerCluster. Status:", 
+            await loadScript("https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js", () => !!window.L?.markerClusterGroup);
+            console.log("Attempted to reload MarkerCluster. Status:",
               typeof window.L.markerClusterGroup === "function" ? "Success" : "Failed");
           }
         } else {
           console.error("Leaflet (window.L) failed to load!");
         }
 
-        if (window.L && typeof window.L.markerClusterGroup === "function" && markers.length > 0) {
-          mountMap();
+        if (window.L && typeof window.L.markerClusterGroup === "function") {
+          if (markers.length > 0) {
+            mountMap();
+          }
         } else {
           console.error("Cannot mount map: Libraries not loaded properly");
         }
@@ -213,36 +250,36 @@ export default function MapView() {
   }, [markers]);
 
   // Helper: creates custom HTML cluster icon
-  function makeClusterIcon(count:number) {
+  function makeClusterIcon(count: number) {
     // Use a more conservative scaling approach
     const baseSize = 32;
     const maxSize = 48; // Reduced maximum size
     const minCount = 2;
     const maxCount = 100;
-    
+
     // More subtle scaling formula with smaller growth rate
     const size = baseSize + Math.min(
       Math.sqrt(count - minCount) / Math.sqrt(maxCount - minCount) * (maxSize - baseSize),
       maxSize - baseSize
     );
-    
+
     const width = Math.max(Math.round(size), baseSize);
     const height = width;
     const innerWidth = Math.round(width * 0.8); // Increased inner circle size for thinner border
     const fontSize = Math.max(11, Math.min(14, Math.round(width * 0.35))); // Limit font size range
-    
+
     const html = CLUSTER_SOCKET_ICON
       .replace(/{width}/g, String(width))
       .replace(/{height}/g, String(height))
       .replace(/{innerWidth}/g, String(innerWidth))
       .replace(/{fontSize}/g, String(fontSize))
       .replace(/{count}/g, String(count));
-    
+
     return window.L.divIcon({
       html: html,
       className: "",
       iconSize: [width, width],
-      iconAnchor: [width/2, width/2]
+      iconAnchor: [width / 2, width / 2]
     });
   }
 
@@ -281,7 +318,7 @@ export default function MapView() {
 
     // Attach individual markers
     markers.forEach((m) => {
-      if(!m.lat || !m.lon) return;
+      if (!m.lat || !m.lon) return;
       const el = window.L.divIcon({
         html: `<div style="background:#8ed6fb4f;border-radius:50%;padding:7px 7px;display:flex;align-items:center;justify-content:center;">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M12 21s-6-5.686-6-10A6 6 0 0 1 18 11c0 4.314-6 10-6 10Z" stroke="#8ed6fb" stroke-width="2" fill="#8ed6fb"/></svg>
@@ -401,16 +438,16 @@ export default function MapView() {
               &#10005;
             </button>
           </div>
-          <div 
+          <div
             ref={scrollContainerRef}
             className="overflow-y-auto max-h-[calc(100vh-60px)] px-4 py-5 space-y-3"
           >
             {visibleMarkers.map((marker, index) => (
-              <div 
+              <div
                 key={marker.id ? `marker-${marker.id}` : `marker-${marker.url}-${index}`}
                 className="glass-panel bg-white/2 card-glow border border-gray-700/50 rounded-lg flex flex-col gap-3 shadow-lg transition">
                 <div className="w-full">
-                  <blockquote data-embed-theme="dark" className="reddit-embed-bq" style={{height: "240px"}} data-embed-height="240">
+                  <blockquote data-embed-theme="dark" className="reddit-embed-bq" style={{ height: "240px" }} data-embed-height="240">
                     <a href={"https://www.reddit.com" + marker.url}></a>
                   </blockquote>
                 </div>
